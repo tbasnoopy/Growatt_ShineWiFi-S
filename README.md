@@ -1,6 +1,10 @@
 # Growatt_ShineWiFi
 Firmware replacement for Growatt ShineWiFi-S (serial), ShineWiFi-X (USB) or custom build sticks (ESP8266/ESP32).
 
+Or
+
+RS485 to MQTT for Victron/Carlo Gavazzi SmartMeter.
+
 # How to install
 
 * Download a precompiled release from [here](https://github.com/otti/Growatt_ShineWiFi-S/releases)
@@ -48,6 +52,12 @@ Not supported:
 I tested several ESP8266-boards with builtin USB-Serial converters so far only boards with CH340 do work (CP21XX and FTDI chips do not work). Almost all ESP8266 modules with added 9-Pin Serial port and level shifter should work with little soldering via Serial.
 
 See the short descriptions to the devices in den directories with their pictures in /IMG/*
+
+* Victron/Carlo Gavazzi EM24 with a RS485 Module connected to Serial2
+* Victron/Carlo Gavazzi EM330 with a RS485 Module connected to Serial2
+* Victron/Carlo Gavazzi EM340 with a RS485 Module connected to Serial2
+* Victron/Carlo Gavazzi ET330 with a RS485 Module connected to Serial2
+* Victron/Carlo Gavazzi ET340 with a RS485 Module connected to Serial2
 
 ## Supported Inverters
 * Growatt 1000-3000S 

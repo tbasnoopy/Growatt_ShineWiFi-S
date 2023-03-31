@@ -35,10 +35,18 @@ typedef enum {
   VOLTAGE,
   CURRENT,
   SECONDS,
+  HOURS,
   PRECENTAGE,
   FREQUENCY,
   TEMPERATURE,
   VA,
+  VAR,
+  POWER_KVA,
+  POWER_KVAR,
+  POWER_KVARH,
+  POWER_KW,
+  Hz,
+  PF,
 } RegisterUnit_t;
 
 typedef enum {
@@ -48,9 +56,14 @@ typedef enum {
   SIZE_32BIT_S,
 } RegisterSize_t;
 
+typedef enum {
+  FirstHigh,
+  LastHigh,
+} ByteOrder_t;
+
 typedef struct {
   uint16_t address;
-  uint32_t value;
+  int32_t value;
   RegisterSize_t size;
   char name[64];
   float multiplier;
@@ -58,6 +71,7 @@ typedef struct {
   RegisterUnit_t unit;
   bool frontend;
   bool plot;
+  ByteOrder_t byteOrder;
 } sGrowattModbusReg_t;
 
 // Growatt limits maximal number of registers that can be polled
@@ -74,7 +88,7 @@ typedef struct {
   uint8_t HoldingFragmentCount;
   sGrowattModbusReg_t InputRegisters[75];
   sGrowattModbusReg_t HoldingRegisters[75];
-  sGrowattReadFragment_t InputReadFragments[10];
+  sGrowattReadFragment_t InputReadFragments[12];
   sGrowattReadFragment_t HoldingReadFragments[10];
 } sProtocolDefinition_t;
 

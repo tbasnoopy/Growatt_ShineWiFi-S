@@ -12,6 +12,10 @@
 // for reference.
 #define GROWATT_MODBUS_VERSION 124
 
+// If you use a RS485 Module for e.g. ET340 you have to specify the DE/RE Pins
+// #define MAX485_DE 13
+// #define MAX485_RE 15
+
 // Setting this define to 0 will disable the MQTT functionality
 #define MQTT_SUPPORTED 1
 // Define the MQTT max packet size here. This only needs to be done for sake of

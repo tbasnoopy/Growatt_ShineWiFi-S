@@ -16,6 +16,10 @@
 #include "Growatt305.h"
 #elif GROWATT_MODBUS_VERSION == 5000
 #include "GrowattSPF.h"
+#elif GROWATT_MODBUS_VERSION == 340
+  #include "GrowattET340.h"
+#elif GROWATT_MODBUS_VERSION == 24
+  #include "GrowattEM24.h"
 #else
 #error "Unsupported Growatt Modbus version"
 #endif
@@ -41,10 +45,26 @@ void Growatt::InitProtocol() {
   init_growatt305(_Protocol);
 #elif GROWATT_MODBUS_VERSION == 5000
   init_growattSPF(_Protocol);
+#elif GROWATT_MODBUS_VERSION == 340
+  init_growattET340(_Protocol);
+#elif GROWATT_MODBUS_VERSION == 24
+  init_growattEM24(_Protocol);  
 #else
 #error "Unsupported Growatt Modbus version"
 #endif
 }
+
+#if defined(MAX485_DE) && defined(MAX485_RE)
+void preTransmission() {
+  digitalWrite(MAX485_DE, 1);
+  digitalWrite(MAX485_RE, 1);
+}
+
+void postTransmission() {
+  digitalWrite(MAX485_DE, 0);
+  digitalWrite(MAX485_RE, 0);
+}
+#endif
 
 void Growatt::begin(Stream& serial) {
   /**
@@ -57,6 +77,19 @@ void Growatt::begin(Stream& serial) {
   _eDevice = SIMULATE_DEVICE;
 #else
   // init communication with the inverter
+#if GROWATT_MODBUS_VERSION == 340 || GROWATT_MODBUS_VERSION == 24
+  pinMode(MAX485_DE, OUTPUT);
+  pinMode(MAX485_RE, OUTPUT);
+
+  digitalWrite(MAX485_DE, 0);
+  digitalWrite(MAX485_RE, 0);
+
+  Serial2.begin(9600);
+  Modbus.begin(1, Serial2);
+  Modbus.preTransmission(preTransmission);
+  Modbus.postTransmission(postTransmission);
+  _eDevice = ShineWiFi_S; // Serial
+#else  
   Serial.begin(9600);
   Modbus.begin(1, serial);
   res = Modbus.readInputRegisters(0, 1);
@@ -72,6 +105,7 @@ void Growatt::begin(Stream& serial) {
     }
     delay(1000);
   }
+#endif
 #endif
 }
 
@@ -94,10 +128,14 @@ bool Growatt::ReadInputRegisters() {
 
   // read each fragment separately
   for (int i = 0; i < _Protocol.InputFragmentCount; i++) {
+      Log.printf("read Segment from 0x%02X with len: %d ...",
+                 _Protocol.InputReadFragments[i].StartAddress,
+                 _Protocol.InputReadFragments[i].FragmentSize);
     res =
         Modbus.readInputRegisters(_Protocol.InputReadFragments[i].StartAddress,
                                   _Protocol.InputReadFragments[i].FragmentSize);
     if (res == Modbus.ku8MBSuccess) {
+      Log.println("ok");
       for (int j = 0; j < _Protocol.InputRegisterCount; j++) {
         // make sure the register we try to read is in the fragment
         if (_Protocol.InputRegisters[j].address >=
@@ -117,13 +155,19 @@ bool Growatt::ReadInputRegisters() {
             _Protocol.InputRegisters[j].value =
                 Modbus.getResponseBuffer(registerAddress);
           } else {
+            if (_Protocol.InputRegisters[j].byteOrder == ByteOrder_t::FirstHigh)
             _Protocol.InputRegisters[j].value =
                 (Modbus.getResponseBuffer(registerAddress) << 16) +
                 Modbus.getResponseBuffer(registerAddress + 1);
+            else
+              _Protocol.InputRegisters[j].value =
+                  Modbus.getResponseBuffer(registerAddress) +
+                  (Modbus.getResponseBuffer(registerAddress + 1) << 16);
           }
         }
       }
     } else {
+      Log.println("failed");
       return false;
     }
   }
@@ -158,9 +202,15 @@ bool Growatt::ReadHoldingRegisters() {
             _Protocol.HoldingRegisters[j].value =
                 Modbus.getResponseBuffer(registerAddress);
           } else {
+            if (_Protocol.HoldingRegisters[j].byteOrder ==
+                ByteOrder_t::FirstHigh)
             _Protocol.HoldingRegisters[j].value =
                 (Modbus.getResponseBuffer(registerAddress) << 16) +
                 Modbus.getResponseBuffer(registerAddress + 1);
+            else
+              _Protocol.HoldingRegisters[j].value =
+                  Modbus.getResponseBuffer(registerAddress) +
+                  (Modbus.getResponseBuffer(registerAddress + 1) << 16);
           }
         }
       }
@@ -345,7 +395,9 @@ void Growatt::CreateJson(char* Buffer, const char* MacAddress) {
 
 void Growatt::CreateUIJson(char* Buffer) {
   StaticJsonDocument<2048> doc;
-  const char* unitStr[] = {"", "W", "kWh", "V", "A", "s", "%", "Hz", "°C"};
+  const char* unitStr[] = {"",   "W",  "kWh", "V",   "A",    "s",
+                           "%",  "Hz", "°C",  "kVA", "kVAr", "kVArh",
+                           "kW", "Hz", "PF",  "VA"};
   const char* statusStr[] = {"(Waiting)", "(Normal Operation)", "", "(Error)"};
   const int statusStrLength = sizeof(statusStr) / sizeof(char*);
 
