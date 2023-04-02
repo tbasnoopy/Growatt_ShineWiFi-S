@@ -71,8 +71,16 @@ typedef struct {
   uint8_t InputFragmentCount;
   uint16_t HoldingRegisterCount;
   uint8_t HoldingFragmentCount;
+#if GROWATT_MODBUS_VERSION == 011
+  sGrowattModbusReg_t InputRegisters[169];
+#else
   sGrowattModbusReg_t InputRegisters[75];
+#endif
+#if GROWATT_MODBUS_VERSION == 011
+  sGrowattModbusReg_t HoldingRegisters[63];
+#else
   sGrowattModbusReg_t HoldingRegisters[75];
+#endif
   sGrowattReadFragment_t InputReadFragments[10];
   sGrowattReadFragment_t HoldingReadFragments[10];
 } sProtocolDefinition_t;
