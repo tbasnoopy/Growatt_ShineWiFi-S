@@ -10,7 +10,9 @@
 // New protocols can be easily defined by adding new Growatt<version>.cpp/h
 // files and then specifying the protocol there. See existing procol files
 // for reference.
+#ifndef GROWATT_MODBUS_VERSION
 #define GROWATT_MODBUS_VERSION 124
+#endif
 
 // Setting this define to 0 will disable the MQTT functionality
 #define MQTT_SUPPORTED 1
