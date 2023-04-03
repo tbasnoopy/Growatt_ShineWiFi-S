@@ -223,7 +223,7 @@ addHoldingRegister(Protocol, 28, SIZE_32BIT, eGRO_011HoldingRegisters_t::MOUDLE,
 addHoldingRegister(Protocol, 30, SIZE_16BIT, eGRO_011HoldingRegisters_t::COMADDRESS, "Com Address", 1., NONE);                // Address Communicate addre ss W 1~254 1
 addHoldingRegister(Protocol, 31, SIZE_16BIT, eGRO_011HoldingRegisters_t::FLASHSTART, "FlashStart", 1., NONE);                 // Update firmware W 0x0001: own 0X0100: control broad
 addHoldingRegister(Protocol, 32, SIZE_16BIT, eGRO_011HoldingRegisters_t::RESETUSERINFO, "ResetUser Info", 1., NONE);          // Reset User Information W 0x0001
-addHoldingRegister(Protocol, 33, SIZE_16BIT, eGRO_011HoldingRegisters_t::RESETTOFACTORY, "Resetto factory", 1., NONE);        // Reset to factory W 0x0001
+addHoldingRegister(Protocol, 33, SIZE_16BIT, eGRO_011HoldingRegisters_t::RESETTOFACTORY, "Reset to factory", 1., NONE);       // Reset to factory W 0x0001
 addHoldingRegister(Protocol, 34, SIZE_16BIT, eGRO_011HoldingRegisters_t::MAXCHARGECURR, "MaxChargeCurr", 1., NONE);           // Max Charge Current W 10~130 1A 70
 addHoldingRegister(Protocol, 35, SIZE_16BIT, eGRO_011HoldingRegisters_t::BULKCHARGEVOLT, "BulkChargeVolt", 1., NONE);         // Bulk Charge Volt W 500~580 0.1V 564
 addHoldingRegister(Protocol, 36, SIZE_16BIT, eGRO_011HoldingRegisters_t::FLOATCHARGEVOLT, "FloatChargeVolt", 1., NONE);       // Float Charge Volt W 500~560 0.1V 540
