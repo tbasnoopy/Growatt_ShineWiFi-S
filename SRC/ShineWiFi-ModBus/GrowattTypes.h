@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 typedef enum {
   Undef_stick = 0,
   ShineWiFi_S = 1,  // Serial DB9-Connector, 9600Bd, Protocol v3.05 (2013)

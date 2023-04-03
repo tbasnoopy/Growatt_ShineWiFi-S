@@ -5,7 +5,7 @@
 #include "GrowattTypes.h"
 
 enum class eGRO_011InputRegisters_t {
-  SYSTEM_STATUS,
+  SYSTEM_STATUS = 0,
   VPV1,
   VPV2,
   PPV1,
@@ -179,7 +179,7 @@ enum class eGRO_011InputRegisters_t {
 };
 
 enum class eGRO_011HoldingRegisters_t {
-  ON_Off,
+  ON_Off = 0,
   OUTPUTCONFIG,
   CHARGECONFIG,
   UTIOUTSTART,
@@ -245,6 +245,6 @@ enum class eGRO_011HoldingRegisters_t {
   LASTHolding
 };
 
-void init_growattGRO_011(sProtocolDefinition_t &Protocol);
+void init_growatt011(sProtocolDefinition_t &Protocol);
 
 #endif  // _GROWATT_ET340_H_

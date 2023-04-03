@@ -8,7 +8,11 @@
 #error Please rename Config.h.example to Config.h
 #endif
 
-#if GROWATT_MODBUS_VERSION == 120
+#if GROWATT_MODBUS_VERSION == 11
+#include "Growatt011.h"
+#elif GROWATT_MODBUS_VERSION == 113
+#include "Growatt113.h"
+#elif GROWATT_MODBUS_VERSION == 120
 #include "Growatt120.h"
 #elif GROWATT_MODBUS_VERSION == 124
 #include "Growatt124.h"
@@ -33,7 +37,11 @@ void Growatt::InitProtocol() {
  * @brief Initialize the protocol struct
  * @param version The version of the modbus protocol to use
  */
-#if GROWATT_MODBUS_VERSION == 120
+#if GROWATT_MODBUS_VERSION == 11
+  init_growatt011(_Protocol);
+#elif GROWATT_MODBUS_VERSION == 113
+  init_growatt113(_Protocol);
+#elif GROWATT_MODBUS_VERSION == 120
   init_growatt120(_Protocol);
 #elif GROWATT_MODBUS_VERSION == 124
   init_growatt124(_Protocol);

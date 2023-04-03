@@ -1,6 +1,7 @@
 #include "Arduino.h"
 
 #include "Growatt011.h"
+#include "protocollhelper.h"
 
 // information from:
 // https://watts247.com/manuals/gw/GrowattModBusProtocol.pdf
@@ -9,89 +10,70 @@
 // 2017‐8‐09
 
 // Supported inverters:
-// ????
+// ?? can not test this ??
 // ?? Growatt OffGrid SPF5000 ??
 
-void addInputRegister(sProtocolDefinition_t& Protocol, const uint16_t& address,
-                      const RegisterSize_t& size,
-                      const eGRO_011InputRegisters_t& id, const char name[64],
-                      const float& multiplier, const RegisterUnit_t& unit,
-                      const bool frontend = false, const bool plot = false) {
-  // todo calculate the resolution
-  Protocol.InputRegisters[id] = sGrowattModbusReg_t{
-      address, 0, size, *name, multiplier, multiplier, unit, frontend, plot};
-}
-
-void addHoldingRegister(sProtocolDefinition_t& Protocol,
-                        const uint16_t& address, const RegisterSize_t& size,
-                        const eGRO_011HoldingRegisters_t& id,
-                        const char name[64], const float& multiplier,
-                        const RegisterUnit_t& unit, const bool frontend = false,
-                        const bool plot = false) {
-  // todo calculate the resolution
-  Protocol.HoldingRegisters[id] = sGrowattModbusReg_t{
-      address, 0, size, *name, multiplier, multiplier, unit, frontend, plot};
-}
-
-void init_growattGRO_011(sProtocolDefinition_t& Protocol) {
+void init_growatt011(sProtocolDefinition_t& Protocol) {
   // definition of input registers
 
+  const uint8_t maxFragmentSize = 10;  // todo: how much really
+
   // clang-format off
-addInputRegister(Protocol, 0, SIZE_16BIT, eGRO_011InputRegisters_t::SYSTEM_STATUS, "System Status", 1.0, VOLTAGE);                     // System run state
-addInputRegister(Protocol, 1, SIZE_16BIT, eGRO_011InputRegisters_t::VPV1, "Vpv1", 0.1, VOLTAGE);                                       // PV1 voltage 0.1V
-addInputRegister(Protocol, 2, SIZE_16BIT, eGRO_011InputRegisters_t::VPV2, "Vpv2", 0.1, VOLTAGE);                                       // PV2 voltage 0.1V
-addInputRegister(Protocol, 3, SIZE_32BIT, eGRO_011InputRegisters_t::PPV1, "Ppv1", 0.1, POWER_W);                                       // H PV1 charge power (high) 0.1W
-addInputRegister(Protocol, 5, SIZE_32BIT, eGRO_011InputRegisters_t::PPV2, "Ppv2", 0.1, POWER_W);                                       // H PV2 charge power (high) 0.1W
-addInputRegister(Protocol, 7, SIZE_16BIT, eGRO_011InputRegisters_t::BUCK1CURR, "Buck1Curr", 0.1, CURRENT);                             // Buck1 current 0.1A
-addInputRegister(Protocol, 8, SIZE_16BIT, eGRO_011InputRegisters_t::BUCK2CURR, "Buck2Curr", 0.1, CURRENT);                             // Buck2 current 0.1A
-addInputRegister(Protocol, 9, SIZE_32BIT, eGRO_011InputRegisters_t::OP_WATT, "OP_Watt", 0.1, POWER_W);                                 // Output active power (high) 0.1W
-addInputRegister(Protocol, 12, SIZE_32BIT, eGRO_011InputRegisters_t::OP_VA, "OP_VA", 0.1, VA);                                         // Output apparent power (low) 0.1VA
-addInputRegister(Protocol, 13, SIZE_32BIT, eGRO_011InputRegisters_t::ACCHR_WATT, "ACChr_Watt", 0.1, POWER_W);                          // AC charge watt (high) 0.1W
-addInputRegister(Protocol, 15, SIZE_32BIT, eGRO_011InputRegisters_t::ACCHR_VA, "ACChr_VA", 0.1, VA);                                   // AC charge apparent power (high) 0.1VA
-addInputRegister(Protocol, 17, SIZE_16BIT, eGRO_011InputRegisters_t::BAT_VOLT, "Bat Volt", 0.01, VOLTAGE);                             //  Battery volt (M3) 0.01V
-addInputRegister(Protocol, 18, SIZE_16BIT, eGRO_011InputRegisters_t::BATTERYSOC, "BatterySOC", 1.0, PRECENTAGE);                       //  Battery SOC
-addInputRegister(Protocol, 19, SIZE_16BIT, eGRO_011InputRegisters_t::BUS_VOLT, "Bus Volt", 0.1, VOLTAGE);                              //  Bus Voltage 0.1V
-addInputRegister(Protocol, 20, SIZE_16BIT, eGRO_011InputRegisters_t::GRID_VOLT, "Grid Volt", 0.1, VOLTAGE);                            //  AC input Volt 0.1V
-addInputRegister(Protocol, 21, SIZE_16BIT, eGRO_011InputRegisters_t::LINE_FREQ, "Line Freq", 0.01, FREQUENCY);                         //  AC input frequency 0.01Hz
-addInputRegister(Protocol, 22, SIZE_16BIT, eGRO_011InputRegisters_t::OUTPUTVOLT, "OutputVolt", 0.1, VOLTAGE);                          //  AC output Volt 0.1V
-addInputRegister(Protocol, 23, SIZE_16BIT, eGRO_011InputRegisters_t::OUTPUTFREQ, "OutputFreq", 0.01, FREQUENCY);                       //  AC output frequency 0.01Hz
-addInputRegister(Protocol, 24, SIZE_16BIT, eGRO_011InputRegisters_t::OUPUT_DCV, "Ouput DCV", 0.1, VOLTAGE);                            //  Ouput DC Volt 0.1V 0: Standby; 1; （No Use） 2: Discharge; 3: Fault; 4: Flash; 5: PV charge; 6: AC charge; 7: Combine charge; 8: Combine charge and Bypass; 9: PV charge and Bypass; 10: AC charge and Bypass; 11: Bypass; 12: PV charge and Discharge; 0~100 1%
-addInputRegister(Protocol, 25, SIZE_16BIT, eGRO_011InputRegisters_t::INVTEMP, "InvTemp", 0.1, TEMPERATURE);                            //  Inv Temperature 0.1C
-addInputRegister(Protocol, 26, SIZE_16BIT, eGRO_011InputRegisters_t::DCDC_TEMP, "DcDc Temp", 0.1, TEMPERATURE);                        //  DC‐DC Temperature 0.1C
-addInputRegister(Protocol, 27, SIZE_16BIT, eGRO_011InputRegisters_t::LOADPERCENT, "LoadPercent", 1.0, PRECENTAGE);                     //  Load Percent
-addInputRegister(Protocol, 28, SIZE_16BIT, eGRO_011InputRegisters_t::BAT_S_VOLT, "Bat_s_Volt", 0.01, VOLTAGE);                         //  Battery‐port volt (DSP) 0.01V
-addInputRegister(Protocol, 29, SIZE_16BIT, eGRO_011InputRegisters_t::BAT_VOLT_DSP, "Bat_Volt_DSP", 0.01, VOLTAGE);                     //  Battery‐bus volt (DSP) 0.01V
-addInputRegister(Protocol, 30, SIZE_32BIT, eGRO_011InputRegisters_t::TIME_TOTAL, "Time total", .5, SECONDS);                           //  Work time total (high) 0.5S
-addInputRegister(Protocol, 32, SIZE_16BIT, eGRO_011InputRegisters_t::BUCK1_NTC, "Buck1_NTC", 0.1, TEMPERATURE);                        //  Buck1 Temperature 0.1C
-addInputRegister(Protocol, 33, SIZE_16BIT, eGRO_011InputRegisters_t::BUCK2_NTC, "Buck2_NTC", 0.1, TEMPERATURE);                        //  Buck2 Temperature 0.1C
-addInputRegister(Protocol, 34, SIZE_16BIT, eGRO_011InputRegisters_t::OP_CURR, "OP_Curr", 0.1, CURRENT);                                //  Output Current 0.1A
-addInputRegister(Protocol, 35, SIZE_16BIT, eGRO_011InputRegisters_t::INV_CURR, "Inv_Curr", 0.1, CURRENT);                              //  Inv Current 0.1A
-addInputRegister(Protocol, 36, SIZE_32BIT, eGRO_011InputRegisters_t::AC_INWATT, "AC_InWatt", 0.1, POWER_W);                            //  AC input watt (high) 0.1W
-addInputRegister(Protocol, 38, SIZE_32BIT, eGRO_011InputRegisters_t::AC_INVA, "AC_InVA", 0.1, VA);                                     //  AC input apparent power (high) 0.1VA
-addInputRegister(Protocol, 40, SIZE_16BIT, eGRO_011InputRegisters_t::FAULT_BIT, "Fault bit", 1., NONE);                                //  fault bit &*1
-addInputRegister(Protocol, 41, SIZE_16BIT, eGRO_011InputRegisters_t::WARNING_BIT, "Warning bit", 1., NONE);                            //  Warning bit &*1
-addInputRegister(Protocol, 42, SIZE_16BIT, eGRO_011InputRegisters_t::FAULT_VALUE, "fault value", 1., NONE);                            //  fault value
-addInputRegister(Protocol, 43, SIZE_16BIT, eGRO_011InputRegisters_t::WARNING_VALUE, "warning value", 1., NONE);                        //  warning value
-addInputRegister(Protocol, 44, SIZE_16BIT, eGRO_011InputRegisters_t::DTC, "DTC", 1., NONE);                                            //  Device Type Code &*6
-addInputRegister(Protocol, 45, SIZE_16BIT, eGRO_011InputRegisters_t::CHECK_STEP, "Check Step", 1., NONE);                              //  Product check step 1:PV1 charge power check; 2:PV2 charge power check; 3:AC charge Power check
-addInputRegister(Protocol, 46, SIZE_16BIT, eGRO_011InputRegisters_t::PRODUCTION_LINE_MODE, "Production Line Mode", 1., NONE);          //  Production Line Mode 0: Not at Production Line Mode; 1: Production Line Mode; 2: Production Line Clear Fault Mode;
-addInputRegister(Protocol, 47, SIZE_16BIT, eGRO_011InputRegisters_t::CONSTANTPOWEROKFLAG, "ConstantPowerOKFlag", 1., NONE);            //  Constant Power OK Flag 0: Not OK; 1: OK;
-addInputRegister(Protocol, 48, SIZE_32BIT, eGRO_011InputRegisters_t::EPV1_TODAY, "Epv1_today", .1, POWER_KWH);                         //  PV Energy today 0.1kW/h
-addInputRegister(Protocol, 50, SIZE_32BIT, eGRO_011InputRegisters_t::EPV1_TOTAL, "Epv1_total", .1, POWER_KWH);                         //  PV Energy total 0.1kW/h
-addInputRegister(Protocol, 52, SIZE_32BIT, eGRO_011InputRegisters_t::EPV2_TODAY, "Epv2_today", .1, POWER_KWH);                         //  PV Energy today
-addInputRegister(Protocol, 54, SIZE_32BIT, eGRO_011InputRegisters_t::EPV2_TOTAL, "Epv2_total", .1, POWER_KWH);                         //  PV Energy total
-addInputRegister(Protocol, 56, SIZE_32BIT, eGRO_011InputRegisters_t::EAC_CHRTODAY, "Eac_chrToday", .1, POWER_KWH);                     //  AC charge Energy today
-addInputRegister(Protocol, 58, SIZE_32BIT, eGRO_011InputRegisters_t::EAC_CHRTOTAL, "Eac_chrTotal", .1, POWER_KWH);                     //  AC charge Energy total
-addInputRegister(Protocol, 60, SIZE_32BIT, eGRO_011InputRegisters_t::EBAT_DISCHRTODAY, "Ebat_dischrToday", .1, POWER_KWH);             //  Bat discharge Energy today
-addInputRegister(Protocol, 62, SIZE_32BIT, eGRO_011InputRegisters_t::EBAT_DISCHRTOTAL, "Ebat_dischrTotal", .1, POWER_KWH);             //  Bat discharge Energy total
-addInputRegister(Protocol, 64, SIZE_32BIT, eGRO_011InputRegisters_t::EAC_DISCHRTODAY, "Eac_dischrToday", .1, POWER_KWH);               //  AC discharge Energy today
-addInputRegister(Protocol, 66, SIZE_32BIT, eGRO_011InputRegisters_t::EAC_DISCHRTOTAL, "Eac_dischrTotal", .1, POWER_KWH);               //  AC discharge Energy total
-addInputRegister(Protocol, 68, SIZE_16BIT, eGRO_011InputRegisters_t::ACCHRCURR_AC, "ACChrCurr AC", .1, CURRENT);                       //  Charge Battery Current 0.1A
-addInputRegister(Protocol, 69, SIZE_32BIT, eGRO_011InputRegisters_t::AC_DISCHRWATT, "AC_DisChrWatt", .1, POWER_W);                     //  AC discharge watt (high) 0.1W
-addInputRegister(Protocol, 71, SIZE_32BIT, eGRO_011InputRegisters_t::AC_DISCHRVA, "AC_DisChrVA", .1, VA);                              //  AC discharge apparent power (high) 0.1VA
-addInputRegister(Protocol, 73, SIZE_32BIT, eGRO_011InputRegisters_t::BAT_DISCHRWATT, "Bat_DisChrWatt", .1, POWER_W);                   //  Bat discharge watt (high) 0.1W
-addInputRegister(Protocol, 75, SIZE_32BIT, eGRO_011InputRegisters_t::BAT_DISCHRVA, "Bat_DisChrVA", .1, VA);                            //  Bat discharge apparent power (high) 0.1VA
-addInputRegister(Protocol, 77, SIZE_32BIT, eGRO_011InputRegisters_t::BAT_WATT, "Bat_Watt", .1, POWER_W);                               //  Bat watt (high)
+addInputRegister(Protocol, 0, SIZE_16BIT, eGRO_011InputRegisters_t::SYSTEM_STATUS, "System Status", 1.0, VOLTAGE, true, false); // System run state
+addInputRegister(Protocol, 1, SIZE_16BIT, eGRO_011InputRegisters_t::VPV1, "Vpv1", 0.1, VOLTAGE);                                // PV1 voltage 0.1V
+addInputRegister(Protocol, 2, SIZE_16BIT, eGRO_011InputRegisters_t::VPV2, "Vpv2", 0.1, VOLTAGE);                                // PV2 voltage 0.1V
+addInputRegister(Protocol, 3, SIZE_32BIT, eGRO_011InputRegisters_t::PPV1, "Ppv1", 0.1, POWER_W, true, true);                    // H PV1 charge power (high) 0.1W
+addInputRegister(Protocol, 5, SIZE_32BIT, eGRO_011InputRegisters_t::PPV2, "Ppv2", 0.1, POWER_W, true, true);                    // H PV2 charge power (high) 0.1W
+addInputRegister(Protocol, 7, SIZE_16BIT, eGRO_011InputRegisters_t::BUCK1CURR, "Buck1Curr", 0.1, CURRENT);                      // Buck1 current 0.1A
+addInputRegister(Protocol, 8, SIZE_16BIT, eGRO_011InputRegisters_t::BUCK2CURR, "Buck2Curr", 0.1, CURRENT);                      // Buck2 current 0.1A
+addInputRegister(Protocol, 9, SIZE_32BIT, eGRO_011InputRegisters_t::OP_WATT, "OP_Watt", 0.1, POWER_W);                          // Output active power (high) 0.1W
+addInputRegister(Protocol, 12, SIZE_32BIT, eGRO_011InputRegisters_t::OP_VA, "OP_VA", 0.1, VA);                                  // Output apparent power (low) 0.1VA
+addInputRegister(Protocol, 13, SIZE_32BIT, eGRO_011InputRegisters_t::ACCHR_WATT, "ACChr_Watt", 0.1, POWER_W);                   // AC charge watt (high) 0.1W
+addInputRegister(Protocol, 15, SIZE_32BIT, eGRO_011InputRegisters_t::ACCHR_VA, "ACChr_VA", 0.1, VA);                            // AC charge apparent power (high) 0.1VA
+addInputRegister(Protocol, 17, SIZE_16BIT, eGRO_011InputRegisters_t::BAT_VOLT, "Bat Volt", 0.01, VOLTAGE);                      //  Battery volt (M3) 0.01V
+addInputRegister(Protocol, 18, SIZE_16BIT, eGRO_011InputRegisters_t::BATTERYSOC, "BatterySOC", 1.0, PRECENTAGE);                //  Battery SOC
+addInputRegister(Protocol, 19, SIZE_16BIT, eGRO_011InputRegisters_t::BUS_VOLT, "Bus Volt", 0.1, VOLTAGE);                       //  Bus Voltage 0.1V
+addInputRegister(Protocol, 20, SIZE_16BIT, eGRO_011InputRegisters_t::GRID_VOLT, "Grid Volt", 0.1, VOLTAGE);                     //  AC input Volt 0.1V
+addInputRegister(Protocol, 21, SIZE_16BIT, eGRO_011InputRegisters_t::LINE_FREQ, "Line Freq", 0.01, FREQUENCY);                  //  AC input frequency 0.01Hz
+addInputRegister(Protocol, 22, SIZE_16BIT, eGRO_011InputRegisters_t::OUTPUTVOLT, "OutputVolt", 0.1, VOLTAGE);                   //  AC output Volt 0.1V
+addInputRegister(Protocol, 23, SIZE_16BIT, eGRO_011InputRegisters_t::OUTPUTFREQ, "OutputFreq", 0.01, FREQUENCY);                //  AC output frequency 0.01Hz
+addInputRegister(Protocol, 24, SIZE_16BIT, eGRO_011InputRegisters_t::OUPUT_DCV, "Ouput DCV", 0.1, VOLTAGE);                     //  Ouput DC Volt 0.1V 0: Standby; 1; （No Use） 2: Discharge; 3: Fault; 4: Flash; 5: PV charge; 6: AC charge; 7: Combine charge; 8: Combine charge and Bypass; 9: PV charge and Bypass; 10: AC charge and Bypass; 11: Bypass; 12: PV charge and Discharge; 0~100 1%
+addInputRegister(Protocol, 25, SIZE_16BIT, eGRO_011InputRegisters_t::INVTEMP, "InvTemp", 0.1, TEMPERATURE);                     //  Inv Temperature 0.1C
+addInputRegister(Protocol, 26, SIZE_16BIT, eGRO_011InputRegisters_t::DCDC_TEMP, "DcDc Temp", 0.1, TEMPERATURE);                 //  DC‐DC Temperature 0.1C
+addInputRegister(Protocol, 27, SIZE_16BIT, eGRO_011InputRegisters_t::LOADPERCENT, "LoadPercent", 1.0, PRECENTAGE);              //  Load Percent
+addInputRegister(Protocol, 28, SIZE_16BIT, eGRO_011InputRegisters_t::BAT_S_VOLT, "Bat_s_Volt", 0.01, VOLTAGE);                  //  Battery‐port volt (DSP) 0.01V
+addInputRegister(Protocol, 29, SIZE_16BIT, eGRO_011InputRegisters_t::BAT_VOLT_DSP, "Bat_Volt_DSP", 0.01, VOLTAGE);              //  Battery‐bus volt (DSP) 0.01V
+addInputRegister(Protocol, 30, SIZE_32BIT, eGRO_011InputRegisters_t::TIME_TOTAL, "Time total", .5, SECONDS);                    //  Work time total (high) 0.5S
+addInputRegister(Protocol, 32, SIZE_16BIT, eGRO_011InputRegisters_t::BUCK1_NTC, "Buck1_NTC", 0.1, TEMPERATURE);                 //  Buck1 Temperature 0.1C
+addInputRegister(Protocol, 33, SIZE_16BIT, eGRO_011InputRegisters_t::BUCK2_NTC, "Buck2_NTC", 0.1, TEMPERATURE);                 //  Buck2 Temperature 0.1C
+addInputRegister(Protocol, 34, SIZE_16BIT, eGRO_011InputRegisters_t::OP_CURR, "OP_Curr", 0.1, CURRENT);                         //  Output Current 0.1A
+addInputRegister(Protocol, 35, SIZE_16BIT, eGRO_011InputRegisters_t::INV_CURR, "Inv_Curr", 0.1, CURRENT);                       //  Inv Current 0.1A
+addInputRegister(Protocol, 36, SIZE_32BIT, eGRO_011InputRegisters_t::AC_INWATT, "AC_InWatt", 0.1, POWER_W);                     //  AC input watt (high) 0.1W
+addInputRegister(Protocol, 38, SIZE_32BIT, eGRO_011InputRegisters_t::AC_INVA, "AC_InVA", 0.1, VA);                              //  AC input apparent power (high) 0.1VA
+addInputRegister(Protocol, 40, SIZE_16BIT, eGRO_011InputRegisters_t::FAULT_BIT, "Fault bit", 1., NONE);                         //  fault bit &*1
+addInputRegister(Protocol, 41, SIZE_16BIT, eGRO_011InputRegisters_t::WARNING_BIT, "Warning bit", 1., NONE);                     //  Warning bit &*1
+addInputRegister(Protocol, 42, SIZE_16BIT, eGRO_011InputRegisters_t::FAULT_VALUE, "fault value", 1., NONE);                     //  fault value
+addInputRegister(Protocol, 43, SIZE_16BIT, eGRO_011InputRegisters_t::WARNING_VALUE, "warning value", 1., NONE);                 //  warning value
+addInputRegister(Protocol, 44, SIZE_16BIT, eGRO_011InputRegisters_t::DTC, "DTC", 1., NONE);                                     //  Device Type Code &*6
+addInputRegister(Protocol, 45, SIZE_16BIT, eGRO_011InputRegisters_t::CHECK_STEP, "Check Step", 1., NONE);                       //  Product check step 1:PV1 charge power check; 2:PV2 charge power check; 3:AC charge Power check
+addInputRegister(Protocol, 46, SIZE_16BIT, eGRO_011InputRegisters_t::PRODUCTION_LINE_MODE, "Production Line Mode", 1., NONE);   //  Production Line Mode 0: Not at Production Line Mode; 1: Production Line Mode; 2: Production Line Clear Fault Mode;
+addInputRegister(Protocol, 47, SIZE_16BIT, eGRO_011InputRegisters_t::CONSTANTPOWEROKFLAG, "ConstantPowerOKFlag", 1., NONE);     //  Constant Power OK Flag 0: Not OK; 1: OK;
+addInputRegister(Protocol, 48, SIZE_32BIT, eGRO_011InputRegisters_t::EPV1_TODAY, "Epv1_today", .1, POWER_KWH);                  //  PV Energy today 0.1kW/h
+addInputRegister(Protocol, 50, SIZE_32BIT, eGRO_011InputRegisters_t::EPV1_TOTAL, "Epv1_total", .1, POWER_KWH);                  //  PV Energy total 0.1kW/h
+addInputRegister(Protocol, 52, SIZE_32BIT, eGRO_011InputRegisters_t::EPV2_TODAY, "Epv2_today", .1, POWER_KWH);                  //  PV Energy today
+addInputRegister(Protocol, 54, SIZE_32BIT, eGRO_011InputRegisters_t::EPV2_TOTAL, "Epv2_total", .1, POWER_KWH);                  //  PV Energy total
+addInputRegister(Protocol, 56, SIZE_32BIT, eGRO_011InputRegisters_t::EAC_CHRTODAY, "Eac_chrToday", .1, POWER_KWH);              //  AC charge Energy today
+addInputRegister(Protocol, 58, SIZE_32BIT, eGRO_011InputRegisters_t::EAC_CHRTOTAL, "Eac_chrTotal", .1, POWER_KWH);              //  AC charge Energy total
+addInputRegister(Protocol, 60, SIZE_32BIT, eGRO_011InputRegisters_t::EBAT_DISCHRTODAY, "Ebat_dischrToday", .1, POWER_KWH);      //  Bat discharge Energy today
+addInputRegister(Protocol, 62, SIZE_32BIT, eGRO_011InputRegisters_t::EBAT_DISCHRTOTAL, "Ebat_dischrTotal", .1, POWER_KWH);      //  Bat discharge Energy total
+addInputRegister(Protocol, 64, SIZE_32BIT, eGRO_011InputRegisters_t::EAC_DISCHRTODAY, "Eac_dischrToday", .1, POWER_KWH);        //  AC discharge Energy today
+addInputRegister(Protocol, 66, SIZE_32BIT, eGRO_011InputRegisters_t::EAC_DISCHRTOTAL, "Eac_dischrTotal", .1, POWER_KWH);        //  AC discharge Energy total
+addInputRegister(Protocol, 68, SIZE_16BIT, eGRO_011InputRegisters_t::ACCHRCURR_AC, "ACChrCurr AC", .1, CURRENT);                //  Charge Battery Current 0.1A
+addInputRegister(Protocol, 69, SIZE_32BIT, eGRO_011InputRegisters_t::AC_DISCHRWATT, "AC_DisChrWatt", .1, POWER_W);              //  AC discharge watt (high) 0.1W
+addInputRegister(Protocol, 71, SIZE_32BIT, eGRO_011InputRegisters_t::AC_DISCHRVA, "AC_DisChrVA", .1, VA);                       //  AC discharge apparent power (high) 0.1VA
+addInputRegister(Protocol, 73, SIZE_32BIT, eGRO_011InputRegisters_t::BAT_DISCHRWATT, "Bat_DisChrWatt", .1, POWER_W);            //  Bat discharge watt (high) 0.1W
+addInputRegister(Protocol, 75, SIZE_32BIT, eGRO_011InputRegisters_t::BAT_DISCHRVA, "Bat_DisChrVA", .1, VA);                     //  Bat discharge apparent power (high) 0.1VA
+addInputRegister(Protocol, 77, SIZE_32BIT, eGRO_011InputRegisters_t::BAT_WATT, "Bat_Watt", .1, POWER_W);                        //  Bat watt (high)
 // addInputRegister(Protocol, 79, SIZE_16BIT, eGRO_011InputRegisters_t::RESERVED, "Reserved", .1, NONE);                                  //  Not Used
 addInputRegister(Protocol, 80, SIZE_16BIT, eGRO_011InputRegisters_t::BATOVERCHARGE, "BatOverCharge", 1., NONE);                        //  Battery Over Charge Flag 0.1kW h 0.1kW h 0.1kW h 0.1kW h 0.1kW h 0.1kW h 0.1kW h (signed int 32) Positive:Battery Discharge Power; Negative: Battery Charge Power; 0:Battery not 0.1W 0.1W over charge; 1:Battery over charge;
 addInputRegister(Protocol, 81, SIZE_16BIT, eGRO_011InputRegisters_t::MPPTFANSPEED, "MpptFanSpeed", 1., PRECENTAGE);                    //  Fan speed of MPPT Charger 0~100 1%
@@ -210,7 +192,7 @@ addInputRegister(Protocol, 381, SIZE_16BIT, eGRO_011InputRegisters_t::BMS2_WGAUG
               // clang-format on
 
   // clang-format off
-addHoldingRegister(Protocol, 0, SIZE_16BIT, eGRO_011HoldingRegisters_t::ON_Off, "On / Off", 1., NONE);                        // The Standby On/Off state and the AC output DisEN/EN state; The low byte is the Standby on/off(1/0),
+addHoldingRegister(Protocol, 0, SIZE_16BIT, eGRO_011HoldingRegisters_t::ON_Off, "On/Off", 1., NONE);                          // The Standby On/Off state and the AC output DisEN/EN state; The low byte is the Standby on/off(1/0),
                                                                                                                               // the high byte is the AC output disable/enable (1/0). Cust ome r Writ e Value 0x0000: Standby Output enable; 0x0001: Standby Output enable; 0x0100: Standby Output disable; 0x0101: Standby Output disable; Unit Initial value 0 off, on, off, on,
 addHoldingRegister(Protocol, 1, SIZE_16BIT, eGRO_011HoldingRegisters_t::OUTPUTCONFIG, "OutputConfig", 1., NONE);              // AC output set W 0: BAT First; 1: PV First; 2: UTI First; 0
 addHoldingRegister(Protocol, 2, SIZE_16BIT, eGRO_011HoldingRegisters_t::CHARGECONFIG, "ChargeConfig", 1., NONE);              // Charge source set W 0: PV first; 1: PV&UTI; 2: PV Only; 0
@@ -274,15 +256,12 @@ addHoldingRegister(Protocol, 76, SIZE_32BIT, eGRO_011HoldingRegisters_t::RATEWAT
 addHoldingRegister(Protocol, 78, SIZE_32BIT, eGRO_011HoldingRegisters_t::RATEVA, "Rate VA", 1., VA);                          // Rata apparent power (high) 0.1VA
 addHoldingRegister(Protocol, 80, SIZE_16BIT, eGRO_011HoldingRegisters_t::FACTORY, "Factory", 1., NONE);                       // The ODM Info code BLVersion2 Boot loader version2 ASCII 71 W 0‐6 Eg：207 is V2.07 Int(16bit s)
 addHoldingRegister(Protocol, 162, SIZE_16BIT, eGRO_011HoldingRegisters_t::BLVERSION2, "BLVersion2", 1., NONE);                // bootloader version
-  // clang-format on
+                             // clang-format on
 
-  // general informations
-  Protocol.InputRegisterCount =
-      static_cast<uint16_t>(eGRO_011InputRegisters_t::LASTInput);
-
-  //   addFragment(Protocol,
-  //   eGRO_011InputRegisters_t::GRO_011_Digital_Input_Status,eGRO_011InputRegisters_t::GRO_011_Digital_Input_Status);
-
-  Protocol.HoldingRegisterCount = eGRO_011HoldingRegisters_t::LASTHolding;
-  Protocol.HoldingFragmentCount = 0;
+  makeSegments(eGRO_011InputRegisters_t::LASTInput, maxFragmentSize,
+               Protocol.InputRegisters, Protocol.InputReadFragments,Protocol.InputFragmentCount);
+    Protocol.InputRegisterCount = static_cast<uint16_t>(eGRO_011InputRegisters_t::LASTInput);
+  makeSegments(eGRO_011HoldingRegisters_t::LASTHolding, maxFragmentSize,
+               Protocol.HoldingRegisters, Protocol.HoldingReadFragments,Protocol.HoldingFragmentCount);
+    Protocol.HoldingRegisterCount = static_cast<uint16_t>(eGRO_011HoldingRegisters_t::LASTHolding);
 }
