@@ -57,6 +57,7 @@ typedef enum {
   P124_ECHARGE_TOTAL,
   P124_ETOLOCALLOAD_TODAY,
   P124_ETOLOCALLOAD_TOTAL,
+  P124_SOC_NEW,
 } eP124InputRegisters_t;
 
 void init_growatt124(sProtocolDefinition_t &Protocol);
